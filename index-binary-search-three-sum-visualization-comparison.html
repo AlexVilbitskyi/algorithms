@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3Sum Algorithm Comparison</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+    }
+
+    .section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 20px;
+    }
+
+    .array-container, .result-container, .step-counter, .complexity-info {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+    .array-element, .result-element, .step-counter {
+        min-width: 50px;
+        width: auto;
+        height: 50px;
+        margin: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2em;
+        color: white;
+        border-radius: 5px;
+        transition: transform 0.3s;
+    }
+
+    .step-counter {
+        padding: 0 24px;
+    }
+
+    .step-counter span {
+        margin-left: 8px;
+        font-size: 2em;
+        font-weight: bold;
+    }
+
+    .element-default { background-color: #333; }
+    .element-selected { background-color: #2a9d8f; }
+    .element-target { background-color: #e76f51; }
+    .element-found { background-color: #f4a261; }
+    .result-element { background-color: #264653; }
+    .step-counter { font-size: 1em; background-color: #4a4e69; }
+    .complexity-info {
+        text-align: center;
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    h2 {
+        width: 100%;
+        text-align: center;
+    }
+
+    #loadingIndicator {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 3em;
+        font-weight: bold;
+        color: white;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(6px);
+        justify-content: center;
+        align-items: center;
+    }
+
+    button {
+        padding: 8px;
+        font-size: 1em;
+    }
+
+    input {
+        padding: 8px;
+        font-size: 1em;
+        width: 54px;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+
+<div id="loadingIndicator" style="display: none;">
+    <p>Calculating... Please wait.</p>
+</div>
+
+<h1>3Sum Algorithm Comparison</h1>
+
+<div>
+    <label for="arrayLength">Enter array length:</label>
+    <input type="number" id="arrayLength" min="3" max="100" value="32">
+    <button onclick="generateRandomArray()">Generate Random Array</button>
+    <button onclick="startComparison()">Start Comparison</button>
+    <button onclick="startComparisonWithoutVisualization()">Start Comparison Without Visualization</button>
+</div>
+
+<div class="complexity-info">
+    <h2>Algorithm Complexity</h2>
+    <p><strong>Optimized Algorithm (Binary Search):</strong> O(n² log n) due to the nested loops and binary search. Each outer pair needs a log n binary search.</p>
+    <p><strong>Brute Force Algorithm:</strong> O(n³/6) because it checks every triplet combination.</p>
+</div>
+
+<div class="section">
+    <h2>Optimized Algorithm Visualization (Binary Search)</h2>
+    <div class="array-container" id="optimizedArrayContainer"></div>
+    <div class="step-counter">
+        Optimized Steps: <span id="optimizedCounter">0</span>
+    </div>
+    <div class="result-container" id="optimizedResultContainer"></div>
+</div>
+
+<div class="section">
+    <h2>Brute Force Algorithm Visualization</h2>
+    <div class="array-container" id="bruteForceArrayContainer"></div>
+    <div class="step-counter">
+        Brute Force Steps: <span id="bruteForceCounter">0</span>
+    </div>
+    <div class="result-container" id="bruteForceResultContainer"></div>
+</div>
+
+<div class="section">
+    <h2>Complexity Growth Chart</h2>
+    <button onclick="generateResultsArray()">Generate Chart for n = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100] (can take up to 10 secunds)</button>
+    <canvas id="complexityChart" width="600" height="400"></canvas>
+</div>
+
+<script>
+    let inputArr = [];
+    let sortedArr = [];
+    let optimizedSteps = 0;
+    let bruteForceSteps = 0;
+    let chart;
+
+    const inputs = [
+        10, 20, 30,
+        40, 50, 60,
+        70, 80, 90,
+        100,
+    ];
+    let optimizedStepsTable = [];
+    let bruteForceStepsTable = [];
+
+    function generateRandomArray(n = document.getElementById('arrayLength').value) {
+        const length = parseInt(n, 10);
+        const range = n * 5;
+        inputArr = Array.from({ length }, () => {
+            const randomValue = Math.floor(Math.random() * range) - Math.floor(range / 2);
+            return randomValue;
+        });
+
+        inputArr.sort(() => Math.random() - 0.5);
+
+        sortedArr = [...inputArr].sort((a, b) => a - b);
+        renderArray(sortedArr, 'optimizedArrayContainer');
+        renderArray(sortedArr, 'bruteForceArrayContainer');
+        return sortedArr;
+    }
+
+    function renderArray(arr, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        arr.forEach((num, index) => {
+            const element = document.createElement('div');
+            element.classList.add('array-element', 'element-default');
+            element.innerText = num;
+            element.setAttribute('data-index', index);
+            container.appendChild(element);
+        });
+    }
+
+    function highlightElement(containerId, index, className) {
+        document.querySelector(`#${containerId} [data-index="${index}"]`).classList.add(className);
+    }
+
+    function clearHighlights(containerId) {
+        document.querySelectorAll(`#${containerId} .array-element`).forEach(element => {
+            element.className = 'array-element element-default';
+        });
+    }
+
+    function displayResultTriplet(triplet, containerId) {
+        const resultContainer = document.getElementById(containerId);
+        const resultElement = document.createElement('div');
+        resultElement.classList.add('result-element');
+        resultElement.innerHTML = `&nbsp;[${triplet.join(', ')}]&nbsp;`;
+        resultContainer.appendChild(resultElement);
+    }
+
+    async function threeSumOptimized(arr, visualization = true, showResults = true) {
+        const result = [];
+        const uniqueTriplets = new Set();
+        const containerId = 'optimizedArrayContainer';
+        optimizedSteps = 0;
+        let optimizedStepsCounter = 0;
+        
+        for (let i = 0; i < arr.length - 1; i++) {
+            for (let j = i + 1; j < arr.length; j++) {    
+                let target = -(arr[i] + arr[j]);
+                let propperEl;
+
+                if (visualization) {
+                    clearHighlights('optimizedArrayContainer');
+                    highlightElement('optimizedArrayContainer', i, 'element-selected');
+                    highlightElement('optimizedArrayContainer', j, 'element-selected');
+                }
+
+                let lo = j + 1;
+                let hi = arr.length - 1;
+
+                while (lo <= hi) {
+                    optimizedStepsCounter++;
+                    optimizedSteps++;
+                    document.getElementById('optimizedCounter').innerText = optimizedSteps;
+
+                    propperEl = null;
+
+                    let mid = Math.floor(lo + (hi - lo) / 2);
+                    let sum = arr[mid] + arr[i] + arr[j];
+
+                    if (visualization) {
+                        clearHighlights(containerId);
+                        highlightElement(containerId, i, 'element-selected');
+                        highlightElement(containerId, j, 'element-selected');
+                        highlightElement(containerId, mid, 'element-target');
+                        await new Promise(resolve => setTimeout(resolve, 15));
+                    }
+
+                    if (arr[mid] == target) {
+                        if (visualization) {
+                            highlightElement(containerId, mid, 'element-found');
+                        }
+
+                        propperEl = arr[mid];
+
+                        break;
+                    }
+
+                    if (arr[mid] < target) {
+                        lo = mid + 1;
+                    }
+
+                    if (arr[mid] > target) {
+                        hi = mid - 1;
+                    }
+                }
+                
+                if (propperEl) {
+                    const triplet = [arr[i], arr[j], propperEl].sort((a, b) => a - b);
+                    const tripletKey = triplet.join(',');
+                    
+                    if (!uniqueTriplets.has(tripletKey) && showResults) {
+                        uniqueTriplets.add(tripletKey);
+                        result.push(triplet);
+                        displayResultTriplet(triplet, 'optimizedResultContainer');
+                    }
+                }
+            }
+        }
+        console.log("optimizedSteps", optimizedStepsCounter);
+
+        optimizedStepsTable.push(optimizedSteps);
+
+        return optimizedStepsCounter;
+    }
+
+    async function threeSumBruteForce(arr, visualization = true, showResults = true) {
+        const result = [];
+        const uniqueTriplets = new Set();
+        const containerId = 'bruteForceArrayContainer';
+        bruteForceSteps = 0;
+        let bruteForceStepsCounter = 0;
+        
+        for (let i = 0; i < arr.length - 2; i++) {
+            for (let j = i + 1; j < arr.length - 1; j++) {
+                for (let k = j + 1; k < arr.length; k++) {
+                    bruteForceSteps++;
+                    bruteForceStepsCounter++;
+                    document.getElementById('bruteForceCounter').innerText = bruteForceSteps;
+
+                    if (visualization) {
+                        clearHighlights(containerId);
+                        highlightElement(containerId, i, 'element-selected');
+                        highlightElement(containerId, j, 'element-selected');
+                        highlightElement(containerId, k, 'element-selected');
+                        await new Promise(resolve => setTimeout(resolve, 15));
+                    }
+                    
+                    
+                    if (arr[i] + arr[j] + arr[k] === 0) {
+                        const triplet = [arr[i], arr[j], arr[k]].sort((a, b) => a - b);
+                        const tripletKey = triplet.join(',');
+
+                        if (!uniqueTriplets.has(tripletKey) && showResults) {
+                            uniqueTriplets.add(tripletKey);
+                            result.push(triplet);
+                            displayResultTriplet(triplet, 'bruteForceResultContainer');
+                        }
+                    }
+                }
+            }
+        }
+        console.log("bruteForceSteps", bruteForceStepsCounter);
+
+        bruteForceStepsTable.push(bruteForceSteps);
+
+        return bruteForceStepsCounter;
+    }
+
+    async function startComparison() {
+        document.getElementById('optimizedResultContainer').innerHTML = '';
+        document.getElementById('bruteForceResultContainer').innerHTML = '';
+        await Promise.all([threeSumOptimized(sortedArr), threeSumBruteForce(sortedArr)]);
+    }
+
+    async function startComparisonWithoutVisualization() {
+        document.getElementById('optimizedResultContainer').innerHTML = '';
+        document.getElementById('bruteForceResultContainer').innerHTML = '';
+        await Promise.all([threeSumOptimized(sortedArr, false), threeSumBruteForce(sortedArr, false)]);
+    }
+
+    // Generate Complexity Growth Chart
+    function generateComplexityChart() {
+        chart?.destroy();
+        document.getElementById('complexityChart').innerHTML = null;
+        const ctx = document.getElementById('complexityChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: inputs,
+                datasets: [
+                    {
+                        label: 'Optimized Algorithm (O(n² log n))',
+                        data: optimizedStepsTable,
+                        borderColor: 'rgba(38, 70, 83, 1)',
+                        fill: false
+                    },
+                    {
+                        label: 'Brute Force Algorithm (O(n³/6))',
+                        data: bruteForceStepsTable,
+                        borderColor: 'rgba(231, 111, 81, 1)',
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Input Size (n)' }},
+                    y: { title: { display: true, text: 'Steps / Operations Count' }}
+                }
+            }
+        });
+    }
+
+    async function generateResultsArray() {
+        document.getElementById('loadingIndicator').style.display = 'flex'; // Show loading indicator
+        await new Promise(resolve => setTimeout(() => {
+            resolve();
+        }, 200));
+
+        
+
+        optimizedStepsTable = [];
+        bruteForceStepsTable = [];
+
+        const data = inputs.map((elCount) => generateRandomArray(elCount));
+
+        const ww = await Promise.all(data.map(async (el) => {
+            return [
+                await threeSumOptimized(el, false, false),
+                await threeSumBruteForce(el, false, false)
+            ];
+        }));
+        
+        generateRandomArray();
+
+        generateComplexityChart();
+
+        document.getElementById('loadingIndicator').style.display = 'none'; // Hide loading indicator
+    }
+
+
+    // Initial array generation
+    generateRandomArray();
+
+</script>
+
+</body>
+</html>

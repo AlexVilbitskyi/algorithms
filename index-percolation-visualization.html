@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Percolation Simulation</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+        #controls {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button onclick="startSimulation()">Start Simulation</button>
+        <input type="number" id="gridSize" value="32" min="10" max="100">
+        <label for="gridSize">Grid Size</label>
+    </div>
+    <canvas id="percolationCanvas" width="600" height="600"></canvas>
+    <canvas id="treeCanvas" width="600" height="600" style="border: 1px solid black; margin-top: 10px;"></canvas>    
+
+    <script>
+        class Percolation {
+    constructor(n) {
+        this.n = n;
+        this.grid = Array.from({ length: n }, () => Array(n).fill(false));
+        this.openSites = 0;
+        this.flatGrid = Array.from({ length: n * n }, (el, index) => index);
+        this.topVirtualSite = n * n;
+        this.bottomVirtualSite = n * n + 1;
+        this.flatGrid.push(this.topVirtualSite, this.bottomVirtualSite);
+    }
+
+    xyTo1D(row, col) {
+        return row * this.n + col;
+    }
+
+    open(row, col) {
+        if (this.isValid(row, col) && !this.grid[row][col]) {
+            this.grid[row][col] = true;
+            this.openSites++;
+
+            const index = this.xyTo1D(row, col);
+
+            if (row === 0) this.union(index, this.topVirtualSite);
+            if (row === this.n - 1) this.union(index, this.bottomVirtualSite);
+            if (row > 0 && this.isOpen(row - 1, col)) this.union(index, this.xyTo1D(row - 1, col));
+            if (row < this.n - 1 && this.isOpen(row + 1, col)) this.union(index, this.xyTo1D(row + 1, col));
+            if (col > 0 && this.isOpen(row, col - 1)) this.union(index, this.xyTo1D(row, col - 1));
+            if (col < this.n - 1 && this.isOpen(row, col + 1)) this.union(index, this.xyTo1D(row, col + 1));
+        }
+    }
+
+    isOpen(row, col) {
+        return this.isValid(row, col) && this.grid[row][col];
+    }
+
+    isValid(row, col) {
+        return row >= 0 && row < this.n && col >= 0 && col < this.n;
+    }
+
+    numberOfOpenSites() {
+        return this.openSites;
+    }
+
+    root(i) {
+        let _i = i;
+        while (_i !== this.flatGrid[_i]) {
+            _i = this.flatGrid[_i];
+        }
+        return _i;
+    }
+
+    connected(p, q) {
+        return this.root(p) === this.root(q);
+    }
+
+    union(p, q) {
+        const i = this.root(p);
+        const j = this.root(q);
+        if (i !== j) {
+            this.flatGrid[i] = j; // Link the root of p to the root of q
+            drawTree(); // Update the tree visualization after each union
+        }
+    }
+
+    checkPercolation() {
+        return this.connected(this.topVirtualSite, this.bottomVirtualSite);
+    }
+
+    findPercolatingCluster() {
+        const cluster = [];
+        const rootTop = this.root(this.topVirtualSite);
+
+        for (let row = 0; row < this.n; row++) {
+            for (let col = 0; col < this.n; col++) {
+                if (this.isOpen(row, col) && this.root(this.xyTo1D(row, col)) === rootTop) {
+                    cluster.push([row, col]);
+                }
+            }
+        }
+        return cluster;
+    }
+}
+
+function drawGrid(context, grid, highlightCluster) {
+    const size = context.canvas.width / grid.n;
+    const cluster = highlightCluster ? grid.findPercolatingCluster() : null;
+
+    for (let row = 0; row < grid.n; row++) {
+        for (let col = 0; col < grid.n; col++) {
+            const isCluster = highlightCluster && cluster.some(([r, c]) => r === row && c === col);
+            context.fillStyle = isCluster ? 'red' : grid.isOpen(row, col) ? 'white' : 'black';
+            context.fillRect(col * size, row * size, size, size);
+        }
+    }
+}
+
+function drawTree() {
+    const canvas = document.getElementById('treeCanvas');
+    const context = canvas.getContext('2d');
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    const n = parseInt(document.getElementById('gridSize').value);
+    const percolation = window.percolation;
+    const nodeRadius = 4;
+
+    // Set spacing between nodes
+    const nodeSpacingX = canvas.width / n;
+    const nodeSpacingY = canvas.height / n;
+
+    for (let i = 0; i < n * n; i++) {
+        const root = percolation.root(i);
+
+        const x = (i % n) * nodeSpacingX + nodeSpacingX / 2;
+        const y = Math.floor(i / n) * nodeSpacingY + nodeSpacingY / 2;
+
+        const rootX = (root % n) * nodeSpacingX + nodeSpacingX / 2;
+        const rootY = Math.floor(root / n) * nodeSpacingY + nodeSpacingY / 2;
+
+        // Draw line from node to its root if they are different
+        if (i !== root) {
+            context.beginPath();
+            context.moveTo(x, y);
+            context.lineTo(rootX, rootY);
+            context.strokeStyle = 'blue';
+            context.stroke();
+        }
+
+        // Draw node
+        context.beginPath();
+        context.arc(x, y, nodeRadius, 0, 2 * Math.PI);
+        context.fillStyle = 'blue';
+        context.fill();
+        context.strokeStyle = 'black';
+        context.stroke();
+    }
+}
+
+function startSimulation() {
+    const canvas = document.getElementById('percolationCanvas');
+    const context = canvas.getContext('2d');
+    const n = parseInt(document.getElementById('gridSize').value);
+    window.percolation = new Percolation(n); // Make percolation globally accessible
+
+    let interval = setInterval(() => {
+        const row = Math.floor(Math.random() * n);
+        const col = Math.floor(Math.random() * n);
+
+        percolation.open(row, col);
+
+        const percolate = percolation.checkPercolation();
+
+        if (percolate) {
+            clearInterval(interval);
+        }
+
+        drawGrid(context, percolation, percolate);
+        drawTree();
+    }, 10);
+}
+
+
+    </script>
+</body>
+</html>

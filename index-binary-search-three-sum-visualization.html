@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Three Sum Algorithm Visualization</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+    }
+
+    .array-container, .result-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .array-element, .result-element {
+        min-width: 50px;
+        width: auto;
+        height: 50px;
+        margin: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2em;
+        color: white;
+        border-radius: 5px;
+        transition: transform 0.3s;
+    }
+
+    .element-default { background-color: #333; }
+    .element-selected { background-color: #2a9d8f; }
+    .element-target { background-color: #e76f51; }
+    .element-found { background-color: #f4a261; }
+    .result-element { background-color: #264653; }
+</style>
+</head>
+<body>
+
+<h1>Three Sum Algorithm Visualization</h1>
+
+<div>
+    <label for="arrayLength">Enter array length:</label>
+    <input type="number" id="arrayLength" min="3" max="50" value="16">
+    <button onclick="generateRandomArray()">Generate Random Array</button>
+</div>
+
+<div class="array-container" id="arrayContainer"></div>
+<button onclick="startThreeSum()">Start Visualization</button>
+<h2>Result Triplets:</h2>
+<div class="result-container" id="resultContainer"></div>
+
+<script>
+    let inputArr = [];
+    let sortedArr = [];
+    
+    function generateRandomArray() {
+        const length = parseInt(document.getElementById('arrayLength').value, 10);
+        inputArr = Array.from({ length }, () => Math.floor(Math.random() * 41) - 20);
+        sortedArr = inputArr.sort((a, b) => a - b);
+        renderArray(sortedArr);
+    }
+
+    const arrayContainer = document.getElementById('arrayContainer');
+    const resultContainer = document.getElementById('resultContainer');
+
+    function renderArray(arr) {
+        arrayContainer.innerHTML = '';
+        arr.forEach((num, index) => {
+            const element = document.createElement('div');
+            element.classList.add('array-element', 'element-default');
+            element.innerText = num;
+            element.setAttribute('data-index', index);
+            arrayContainer.appendChild(element);
+        });
+    }
+
+    function highlightElement(index, className) {
+        document.querySelector(`[data-index="${index}"]`).classList.add(className);
+    }
+
+    function clearHighlights() {
+        document.querySelectorAll('.array-element').forEach(element => {
+            element.className = 'array-element element-default';
+        });
+    }
+
+    function displayResultTriplet(triplet) {
+        const resultElement = document.createElement('div');
+        resultElement.classList.add('result-element');
+        resultElement.innerHTML = `&nbsp;[${triplet.join(', ')}]&nbsp;`;
+        resultContainer.appendChild(resultElement);
+    }
+
+    async function binarySearchVisualization(arr, val) {
+        let lo = 0, hi = arr.length - 1;
+        
+        while (lo <= hi) {
+            let mid = Math.floor(lo + (hi - lo) / 2);
+            clearHighlights();
+            highlightElement(lo, 'element-target');
+            highlightElement(hi, 'element-target');
+            highlightElement(mid, 'element-selected');
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            if (arr[mid] === val) {
+                highlightElement(mid, 'element-found');
+                return arr[mid];
+            } else if (arr[mid] < val) {
+                lo = mid + 1;
+            } else {
+                hi = mid - 1;
+            }
+        }
+        return null;
+    }
+
+    async function threeSum(arr) {
+        const result = [];
+        const uniqueTriplets = new Set();
+        
+        for (let i = 0; i < arr.length - 1; i++) {
+            for (let j = i + 1; j < arr.length; j++) {
+                const target = -(arr[i] + arr[j]);
+                
+                clearHighlights();
+                highlightElement(i, 'element-selected');
+                highlightElement(j, 'element-selected');
+                
+                const sum = await binarySearchVisualization(arr, target);
+                
+                if (sum !== null) {
+                    const triplet = [arr[i], arr[j], sum].sort((a, b) => a - b);
+                    const tripletKey = triplet.join(',');
+                    
+                    if (!uniqueTriplets.has(tripletKey)) {
+                        uniqueTriplets.add(tripletKey);
+                        result.push(triplet);
+                        displayResultTriplet(triplet);
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    async function startThreeSum() {
+        resultContainer.innerHTML = '';
+        const result = await threeSum(sortedArr);
+        console.log('Unique triplets that sum to zero:', result);
+    }
+
+    // Initial array generation
+    generateRandomArray();
+</script>
+
+</body>
+</html>

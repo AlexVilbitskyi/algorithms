@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary search</title>
+</head>
+<body>
+    <script>
+        const inputArr = [-1,0,1,2,-4, -7, -11, -5, -22, -9, 33, 5, 11, 9, 3];
+        const sortedArr = inputArr.sort((a, b) => a - b);
+
+        console.log(sortedArr);
+
+        const threeSum = (arr) => {
+            const result = [];
+            for (let i = 0; i < arr.length - 1; i++) {
+                for (let j = i + 1; j < arr.length; j++) {
+                    const sum = binarySearch(arr, -(arr[i] + arr[j]));
+                    if (sum) {
+                        result.push([arr[i], arr[j], sum])
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        const binarySearch = (arr, val) => {
+            let lo = 0;
+            let hi = arr.length - 1;
+
+            let result = null;
+            while (lo <= hi) {
+                let mid = +(lo + (hi - lo) / 2).toFixed();
+                
+                if (arr[mid] < val) {
+                    lo = mid + 1;
+                } else if (arr[mid] > val) {
+                    hi = mid - 1;
+                } else {
+                    result = arr[mid];
+                    break;   
+                }
+            }
+
+            return result;
+        }
+
+        // console.log(binarySearch(sortedArr, -9));
+        console.log(threeSum(sortedArr));
+    </script>
+</body>
+</html>
